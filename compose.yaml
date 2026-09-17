@@ -1,0 +1,84 @@
+# Local test topology. A lean subset of the Railway service graph — enough to test the API, auth, the key seed and
+# the ingest->scrape->result loop quickly. The published template additionally runs a scrape-playwright worker for
+# JavaScript-rendered pages (see RAILWAY_TEMPLATE.md); the cheerio worker here proves the same queue/result path.
+#   postgres -> state (API keys, jobs, results)   redis -> job queue
+#   api      -> HTTP API (wrapper; seeds the key)  scrape-cheerio -> static-HTML scrape worker
+name: anycrawl-railway-test
+
+networks:
+  default:
+    name: anycrawl-railway-test
+
+x-worker-env: &worker-env
+  NODE_ENV: production
+  ANYCRAWL_REDIS_URL: redis://redis:6379
+  ANYCRAWL_API_DB_TYPE: postgresql
+  ANYCRAWL_API_DB_CONNECTION: postgres://anycrawl:local-test-only-postgres-password@postgres:5432/anycrawl
+  ANYCRAWL_HEADLESS: 'true'
+  ANYCRAWL_IGNORE_SSL_ERROR: 'true'
+  MIGRATE_DATABASE: 'false'
+
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: anycrawl
+      POSTGRES_PASSWORD: local-test-only-postgres-password
+      POSTGRES_DB: anycrawl
+    volumes:
+      - pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U anycrawl -d anycrawl']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: images/api/Dockerfile
+      args:
+        WRAPPER_VERSION: ${WRAPPER_VERSION:-0.0.0-local}
+        VCS_REF: ${VCS_REF:-local}
+    image: ${ANYCRAWL_RAILWAY_IMAGE:-anycrawl-railway-api:local}
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      <<: *worker-env
+      MIGRATE_DATABASE: 'true'
+      ANYCRAWL_API_PORT: '8080'
+      PORT: '8080'
+      ANYCRAWL_API_AUTH_ENABLED: 'true'
+      ANYCRAWL_API_CREDITS_ENABLED: 'true'
+      ANYCRAWL_API_KEY: ${ANYCRAWL_TEST_API_KEY:-local-test-only-anycrawl-api-key-000000000000}
+    ports:
+      - '127.0.0.1:${ANYCRAWL_TEST_PORT:-18080}:8080'
+
+  scrape-cheerio:
+    image: ghcr.io/any4ai/anycrawl-scrape-cheerio:v1.0.0@sha256:a56bc477e24d0d3d7254e7f75cacc86f2d4f354e8cd1f25a6906b1dd9f4ea1fa
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      <<: *worker-env
+      ANYCRAWL_CRAWLEE_STORAGE_DIR: /tmp/anycrawl-crawlee-storage/cheerio
+
+volumes:
+  pg:
+  redis:
