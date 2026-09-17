@@ -39,7 +39,7 @@ The API runs upstream's official image, pinned by digest, with a start-up wrappe
 generated `ANYCRAWL_API_KEY` (using AnyCrawl's own database layer, idempotently, without printing it). The API
 enqueues scrape jobs on Redis; the cheerio worker (static HTML) and the playwright worker (JavaScript-rendered
 pages) consume them and write results to PostgreSQL, which the API returns — so no shared filesystem is needed
-between services. Redis is bound on `::` for Railway's IPv6 private network, only the API has a public domain, and
+between services. Redis is reachable over Railway's IPv6 private network via the client's `family=0` option, only the API has a public domain, and
 the port and health check are wired.
 
 Tested in CI and on a live deployment of this template: the API is healthy, a request with no key or a wrong key is

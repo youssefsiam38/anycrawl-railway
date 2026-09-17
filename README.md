@@ -6,7 +6,7 @@ service). API-key authentication is on, and a working key is **generated and see
 
 This is a community-maintained template and is not affiliated with the AnyCrawl project.
 
-- **Template image:** `ghcr.io/youssefsiam38/anycrawl-railway-api` (the official API image, pinned by digest, with
+- **Template image:** `ghcr.io/youssefsiam38/anycrawl-railway` (the official API image, pinned by digest, with
   an API-key seed) plus the official worker images
 - **Upstream:** AnyCrawl (MIT) + PostgreSQL + Redis — see [UPSTREAM.md](UPSTREAM.md)
 

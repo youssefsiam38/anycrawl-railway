@@ -27,7 +27,7 @@ services:
       POSTGRES_PASSWORD: local-test-only-postgres-password
       POSTGRES_DB: anycrawl
     volumes:
-      - pg:/var/lib/postgresql/data
+      - pg:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U anycrawl -d anycrawl']
       interval: 5s

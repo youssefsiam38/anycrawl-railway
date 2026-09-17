@@ -31,8 +31,9 @@ re-create it.
 
 - **Queue-based, no shared FS.** The api and workers communicate via Redis (queue) + Postgres (results), so Railway
   needs no shared volume between services.
-- **Redis must bind `::`.** Railway's private network is IPv6; `redis-server --bind :: --protected-mode no` makes
-  Redis reachable at `redis.railway.internal:6379` (dual-stack on Linux).
+- **Redis + ioredis need `family=0`.** Railway's private network is IPv6; the ioredis client defaults to IPv4,
+  so the Redis URL is `redis://…:6379?family=0` and Redis runs with `--protected-mode no` (no `--bind`, so it
+  listens on all interfaces). Without `family=0`, the api and workers cannot reach Redis and scrapes hang.
 - **`PORT` = 8080 = `ANYCRAWL_API_PORT`** = the domain target port; health check `/health`.
 - **Only the api migrates** (`MIGRATE_DATABASE=true`); the workers set it to `false` to avoid racing on migrations.
 - **Deterministic key.** The wrapper seeds `ANYCRAWL_API_KEY` so it is readable from the variables, not the logs.

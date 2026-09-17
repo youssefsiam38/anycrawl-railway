@@ -18,7 +18,7 @@ are official and pinned by digest.
 
 - PostgreSQL: `postgres:16-alpine` — digest `sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685`
 - Redis: `redis:7-alpine` — digest `sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf`
-  (run with `--bind ::` so it is reachable over Railway's IPv6 private network)
+  (run with `--protected-mode no`; the ioredis client uses `?family=0` to reach it over Railway's IPv6 private network)
 
 ## Refreshing a digest
 

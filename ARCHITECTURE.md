@@ -45,10 +45,13 @@ filesystem, so the services need no shared volume — which is exactly what Rail
 
 ## postgres and redis
 
-- `postgres:16-alpine`, pinned by digest, volume at `/var/lib/postgresql/data` — holds API keys, jobs and results.
-- `redis:7-alpine`, pinned by digest, volume at `/data` (AOF). Run with `redis-server --appendonly yes --bind ::
-  --protected-mode no` so it is reachable over Railway's IPv6 private network (dual-stack on Linux). Neither has a
-  public domain.
+- `postgres:16-alpine`, pinned by digest, volume at the **parent** `/var/lib/postgresql` (not `/var/lib/postgresql/data`)
+  — a Railway volume mounted directly at the data dir carries a `lost+found`, and `initdb` refuses a non-empty data
+  directory, so the volume is mounted one level up and Postgres creates a fresh data subdirectory. Holds API keys,
+  jobs and results.
+- `redis:7-alpine`, pinned by digest, volume at `/data` (AOF). Run with `redis-server --appendonly yes
+  --protected-mode no` (listens on all interfaces). AnyCrawl's Redis client (ioredis) defaults to IPv4, so the Redis
+  URL uses `?family=0` to reach Railway's IPv6 private network. Neither has a public domain.
 
 ## Notes
 

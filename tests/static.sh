@@ -29,7 +29,7 @@ assert_eq "four services (api, postgres, redis, scrape-cheerio)" "api postgres r
   "$(jq -r '[.services | keys[]] | sort | join(" ")' <<<"$cfg")"
 assert_eq "only the api publishes a port" "api" "$(jq -r '[.services | to_entries[] | select(.value.ports) | .key] | join(" ")' <<<"$cfg")"
 assert_eq "the api port binds to loopback" "127.0.0.1" "$(jq -r '[.services.api.ports[]? | .host_ip] | join(" ")' <<<"$cfg")"
-assert_eq "the database volume is mounted" "/var/lib/postgresql/data" "$(jq -r '[.services.postgres.volumes[]? | .target] | join(" ")' <<<"$cfg")"
+assert_eq "the database volume is mounted" "/var/lib/postgresql" "$(jq -r '[.services.postgres.volumes[]? | .target] | join(" ")' <<<"$cfg")"
 assert_eq "auth is enabled" "true" "$(jq -r '.services.api.environment.ANYCRAWL_API_AUTH_ENABLED' <<<"$cfg")"
 for img in postgres redis scrape-cheerio; do
   assert_contains "$img is pinned by digest" '@sha256:[0-9a-f]\{64\}$' "$(jq -r ".services.\"$img\".image" <<<"$cfg")"
